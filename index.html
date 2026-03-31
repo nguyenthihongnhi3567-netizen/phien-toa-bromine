@@ -33,7 +33,7 @@
         .wrong { background-color: #991b1b !important; border-color: #ef4444 !important; }
 
         .chart-bar {
-            transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: height 1s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         .verdict-stamp {
@@ -160,11 +160,11 @@
         <div class="p-10 grid grid-cols-1 lg:grid-cols-3 gap-10">
             <div class="space-y-6 text-center border-r border-[#b8860b]/20 pr-4">
                 <div class="bg-black/40 p-6 rounded-lg border border-[#b8860b]/30">
-                    <p class="text-xs text-[#b8860b] uppercase font-black mb-1">Tổng số phiếu bầu</p>
-                    <h3 id="teacher-total-votes" class="text-6xl font-black text-white">0</h3>
+                    <p class="text-xs text-[#b8860b] uppercase font-black mb-1 tracking-widest">Tổng số phiếu bầu</p>
+                    <h3 id="teacher-total-votes" class="text-6xl font-black text-white leading-none mt-2">0</h3>
                 </div>
                 <div class="bg-black/40 p-6 rounded-lg border border-[#b8860b]/30 min-h-[220px] flex flex-col items-center justify-center relative overflow-hidden">
-                    <p class="text-xs text-[#b8860b] uppercase font-black mb-4 z-10">Phán quyết cuối cùng</p>
+                    <p class="text-xs text-[#b8860b] uppercase font-black mb-4 z-10 tracking-widest">Phán quyết cuối cùng</p>
                     <div id="teacher-stamp" class="hidden z-10"></div>
                     <p id="teacher-waiting-msg" class="text-gray-500 italic text-sm text-center">Đang thu thập dữ liệu...</p>
                 </div>
@@ -178,34 +178,47 @@
             </div>
 
             <div class="lg:col-span-2 bg-black/20 p-8 rounded-lg border border-[#b8860b]/30">
-                <h2 class="text-center text-[#d4af37] font-bold uppercase text-sm mb-12 tracking-[0.2em]">Biểu đồ tỉ lệ biểu quyết</h2>
+                <h2 class="text-center text-[#d4af37] font-bold uppercase text-sm mb-10 tracking-[0.3em]">Biểu đồ tỉ lệ biểu quyết (100%)</h2>
                 
-                <div class="flex items-end justify-around h-64 border-b-2 border-gray-700 pb-2 gap-10">
-                    <!-- Column Useful -->
-                    <div class="flex flex-col items-center flex-1 group">
-                        <div class="flex flex-col items-center mb-2">
-                            <span id="teacher-val-useful" class="text-4xl font-black text-green-400 leading-none">0</span>
-                            <span id="teacher-percent-useful" class="text-xs font-bold text-green-600 mt-1">(0%)</span>
-                        </div>
-                        <div id="teacher-bar-useful" class="chart-bar w-full bg-gradient-to-t from-green-900 to-green-500 rounded-t-md shadow-[0_0_20px_rgba(34,197,94,0.2)]" style="height: 5%"></div>
-                        <span class="mt-4 text-xs font-black text-green-200 uppercase text-center leading-tight tracking-widest">Vô tội<br>(Hữu ích)</span>
+                <div class="flex items-end justify-around h-72 border-b-2 border-gray-700 pb-2 gap-12 relative">
+                    <!-- Grid Lines -->
+                    <div class="absolute inset-0 flex flex-col justify-between pointer-events-none pb-2 opacity-10">
+                        <div class="w-full border-t border-gray-400"></div>
+                        <div class="w-full border-t border-gray-400"></div>
+                        <div class="w-full border-t border-gray-400"></div>
+                        <div class="w-full border-t border-gray-400"></div>
+                        <div class="w-full border-t border-gray-400"></div>
                     </div>
 
-                    <!-- Column Guilty -->
-                    <div class="flex flex-col items-center flex-1 group">
-                        <div class="flex flex-col items-center mb-2">
-                            <span id="teacher-val-guilty" class="text-4xl font-black text-red-400 leading-none">0</span>
-                            <span id="teacher-percent-guilty" class="text-xs font-bold text-red-600 mt-1">(0%)</span>
+                    <!-- Column Useful (Vô tội) -->
+                    <div class="flex flex-col items-center flex-1 h-full z-10">
+                        <div class="flex flex-col items-center mb-3">
+                            <span id="teacher-percent-useful" class="text-xl font-black text-green-400 tracking-tighter">0%</span>
+                            <span id="teacher-val-useful" class="text-[10px] font-bold text-green-700 mt-0.5 tracking-widest">0 PHIẾU</span>
                         </div>
-                        <div id="teacher-bar-guilty" class="chart-bar w-full bg-gradient-to-t from-red-900 to-red-500 rounded-t-md shadow-[0_0_20px_rgba(239,68,68,0.2)]" style="height: 5%"></div>
-                        <span class="mt-4 text-xs font-black text-red-200 uppercase text-center leading-tight tracking-widest">Có tội<br>(Nguy hiểm)</span>
+                        <div class="w-full flex-1 bg-gray-800/20 rounded-t-lg relative flex items-end overflow-hidden border border-white/5">
+                            <div id="teacher-bar-useful" class="chart-bar w-full bg-gradient-to-t from-green-950 via-green-600 to-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]" style="height: 0%"></div>
+                        </div>
+                        <span class="mt-4 text-[10px] font-black text-green-200 uppercase text-center leading-tight tracking-[0.2em]">BỊ CÁO VÔ TỘI</span>
+                    </div>
+
+                    <!-- Column Guilty (Có tội) -->
+                    <div class="flex flex-col items-center flex-1 h-full z-10">
+                        <div class="flex flex-col items-center mb-3">
+                            <span id="teacher-percent-guilty" class="text-xl font-black text-red-400 tracking-tighter">0%</span>
+                            <span id="teacher-val-guilty" class="text-[10px] font-bold text-red-700 mt-0.5 tracking-widest">0 PHIẾU</span>
+                        </div>
+                        <div class="w-full flex-1 bg-gray-800/20 rounded-t-lg relative flex items-end overflow-hidden border border-white/5">
+                            <div id="teacher-bar-guilty" class="chart-bar w-full bg-gradient-to-t from-red-950 via-red-600 to-red-400 shadow-[0_0_20px_rgba(239,68,68,0.3)]" style="height: 0%"></div>
+                        </div>
+                        <span class="mt-4 text-[10px] font-black text-red-200 uppercase text-center leading-tight tracking-[0.2em]">BỊ CÁO CÓ TỘI</span>
                     </div>
                 </div>
                 
                 <div class="mt-8">
-                    <p class="text-[10px] text-[#b8860b] uppercase font-black mb-3">Bồi thẩm viên vừa bỏ phiếu:</p>
-                    <div id="recent-voters" class="flex flex-wrap gap-2 text-[10px]">
-                        <span class="text-gray-500 italic text-xs font-light">Chưa có dữ liệu...</span>
+                    <p class="text-[10px] text-[#b8860b] uppercase font-black mb-3 tracking-widest">Bồi thẩm viên vừa bỏ phiếu:</p>
+                    <div id="recent-voters" class="flex flex-wrap gap-2">
+                        <span class="text-gray-500 italic text-xs font-light">Đang chờ dữ liệu...</span>
                     </div>
                 </div>
             </div>
@@ -403,15 +416,15 @@
                 });
 
                 document.getElementById('teacher-total-votes').innerText = total;
-                document.getElementById('teacher-val-useful').innerText = useful;
-                document.getElementById('teacher-val-guilty').innerText = guilty;
+                document.getElementById('teacher-val-useful').innerText = useful + " PHIẾU";
+                document.getElementById('teacher-val-guilty').innerText = guilty + " PHIẾU";
 
                 if (total > 0) {
                     const usefulPercent = Math.round((useful / total) * 100);
                     const guiltyPercent = Math.round((guilty / total) * 100);
 
-                    document.getElementById('teacher-percent-useful').innerText = `(${usefulPercent}%)`;
-                    document.getElementById('teacher-percent-guilty').innerText = `(${guiltyPercent}%)`;
+                    document.getElementById('teacher-percent-useful').innerText = `${usefulPercent}%`;
+                    document.getElementById('teacher-percent-guilty').innerText = `${guiltyPercent}%`;
 
                     document.getElementById('teacher-bar-useful').style.height = `${usefulPercent}%`;
                     document.getElementById('teacher-bar-guilty').style.height = `${guiltyPercent}%`;
@@ -433,15 +446,15 @@
                         stamp.className = "verdict-stamp text-yellow-500 border-yellow-500"; 
                     }
 
-                    document.getElementById('recent-voters').innerHTML = names.slice(-15).reverse().map(n => `<span class="bg-[#4a3728] px-2 py-1 rounded border border-[#b8860b]/30 text-[#d4af37] animate-pulse text-[10px]">${n}</span>`).join('');
+                    document.getElementById('recent-voters').innerHTML = names.slice(-15).reverse().map(n => `<span class="bg-[#4a3728] px-2 py-1 rounded border border-[#b8860b]/30 text-[#d4af37] animate-pulse text-[10px] tracking-tight uppercase font-bold">${n}</span>`).join('');
                 } else {
-                    document.getElementById('teacher-percent-useful').innerText = '(0%)';
-                    document.getElementById('teacher-percent-guilty').innerText = '(0%)';
-                    document.getElementById('teacher-bar-useful').style.height = '5%';
-                    document.getElementById('teacher-bar-guilty').style.height = '5%';
+                    document.getElementById('teacher-percent-useful').innerText = '0%';
+                    document.getElementById('teacher-percent-guilty').innerText = '0%';
+                    document.getElementById('teacher-bar-useful').style.height = '0%';
+                    document.getElementById('teacher-bar-guilty').style.height = '0%';
                     document.getElementById('teacher-stamp').classList.add('hidden');
                     document.getElementById('teacher-waiting-msg').classList.remove('hidden');
-                    document.getElementById('recent-voters').innerHTML = '<span class="text-gray-500 italic text-xs font-light">Chưa có dữ liệu...</span>';
+                    document.getElementById('recent-voters').innerHTML = '<span class="text-gray-500 italic text-xs font-light tracking-widest uppercase">Chưa có dữ liệu...</span>';
                 }
             }, (err) => console.error("Snapshot error:", err));
         }
