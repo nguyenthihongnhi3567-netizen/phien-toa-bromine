@@ -58,11 +58,7 @@
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
 
-    <!-- THÔNG BÁO CHẾ ĐỘ -->
-    <div id="mode-status" class="fixed top-0 left-0 w-full text-white text-[10px] py-1 px-4 text-center z-[100] font-bold uppercase tracking-wider hidden">
-    </div>
-
-    <!-- GIAO DIỆN HỌC SINH -->
+    <!-- STUDENT VIEW -->
     <div id="student-view" class="max-w-2xl w-full bg-[#2d241e] border-4 border-[#b8860b] rounded-lg shadow-2xl overflow-hidden hidden">
         <div class="bg-[#4a3728] p-6 text-center border-b-4 border-[#b8860b]">
             <h1 class="court-font text-3xl font-black text-[#d4af37] uppercase tracking-widest">Tòa Án Hóa Học</h1>
@@ -81,7 +77,7 @@
 
             <div id="choices-grid" class="space-y-3"></div>
 
-            <div id="feedback-box" class="mt-6 p-4 rounded-lg hidden text-center font-bold border"></div>
+            <div id="feedback-box" class="mt-6 p-4 rounded-lg hidden text-center font-bold border text-sm italic"></div>
             
             <button id="next-question-btn" class="mt-6 w-full bg-[#b8860b] hover:bg-[#d4af37] text-[#2d241e] font-black py-3 rounded uppercase transition-colors hidden shadow-lg">
                 Tiếp tục thẩm vấn
@@ -91,30 +87,23 @@
         <div id="student-end-screen" class="p-12 text-center hidden">
             <div class="text-6xl mb-4">⚖️</div>
             <h2 class="court-font text-3xl font-bold text-[#d4af37] mb-4 uppercase">Phiếu biểu quyết đã gửi</h2>
-            <p id="student-end-msg" class="text-gray-300 mb-8 font-light">Lá phiếu của bạn về bị cáo bromine đã được cập nhật vào hệ thống trung tâm năm 2026.</p>
+            <p id="student-end-msg" class="text-gray-300 mb-8 font-light">Lá phiếu của bạn về bị cáo bromine đã được cập nhật vào hệ thống trung tâm năm 2026. Hãy quan sát màn hình giáo viên để biết phán quyết cuối cùng.</p>
             <button onclick="location.reload()" class="text-[#b8860b] underline text-xs uppercase font-black tracking-widest opacity-60 hover:opacity-100 transition-opacity">Làm lại bài kiểm tra</button>
         </div>
     </div>
 
-    <!-- GIAO DIỆN MÁY CHỦ GIÁO VIÊN -->
+    <!-- TEACHER VIEW -->
     <div id="teacher-view" class="max-w-6xl w-full bg-[#1a1512] border-4 border-[#b8860b] rounded-xl shadow-2xl overflow-hidden hidden teacher-glow">
         <div class="bg-[#352a22] p-10 text-center border-b-4 border-[#b8860b]">
             <h1 class="court-font text-5xl font-black text-[#d4af37] uppercase tracking-[0.25em] mb-3">HỘI ĐỒNG XÉT XỬ BROMINE - 2026</h1>
             <div class="flex justify-center items-center gap-6">
                 <div class="flex items-center gap-3">
-                    <span id="status-dot" class="w-3 h-3 bg-gray-500 rounded-full"></span>
-                    <span id="status-text" class="text-sm font-black text-gray-400 uppercase tracking-widest">Đang kiểm tra kết nối...</span>
+                    <span id="status-dot" class="w-3 h-3 bg-green-500 rounded-full animate-ping"></span>
+                    <span class="text-sm font-black text-gray-400 uppercase tracking-widest">Máy chủ Live</span>
                 </div>
                 <div class="h-6 w-px bg-gray-600"></div>
                 <div class="text-[#b8860b] font-bold uppercase tracking-widest text-sm">Bị cáo: Bromine</div>
             </div>
-        </div>
-
-        <div id="teacher-tools" class="bg-black/20 p-4 border-b border-[#b8860b]/30 flex flex-wrap items-center justify-between gap-4 px-10">
-            <div class="text-xs text-gray-400 italic">Mẹo: Gửi link hiện tại cho học sinh (bỏ đoạn ?role=teacher) để tham gia biểu quyết.</div>
-            <button id="copy-student-link" class="bg-[#b8860b] hover:bg-[#d4af37] text-black px-4 py-2 rounded text-[10px] font-black uppercase transition-all shadow-lg active:scale-95">
-                Sao chép Link Học sinh
-            </button>
         </div>
 
         <div class="p-10 grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -151,50 +140,28 @@
         </div>
     </div>
 
-    <!-- Script xử lý -->
+    <!-- SCRIPT LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Khai báo an toàn cho môi trường GitHub
-        let firebaseConfig = null;
-        let db = null;
-        let auth = null;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'bromine-trial-default';
+        // Cấu hình từ ảnh image_3cce67.jpg của bạn
+        const firebaseConfig = {
+            apiKey: "AIzaSyAJpmjjyjTn9MmhX3ceSmdTQahKw7PlNp0",
+            authDomain: "phien-toa-bromine.firebaseapp.com",
+            projectId: "phien-toa-bromine",
+            storageBucket: "phien-toa-bromine.firebasestorage.app",
+            messagingSenderId: "138008156700",
+            appId: "1:138008156700:web:2ba8a196cd49234b041dd9"
+        };
 
-        // Thử lấy cấu hình từ môi trường Canvas
-        try {
-            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                firebaseConfig = JSON.parse(__firebase_config);
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                
-                document.getElementById('mode-status').innerText = "📡 Chế độ trực tuyến: Đang kết nối";
-                document.getElementById('mode-status').classList.add('bg-green-600');
-                document.getElementById('mode-status').classList.remove('hidden');
-                
-                if(document.getElementById('status-dot')) {
-                    document.getElementById('status-dot').classList.replace('bg-gray-500', 'bg-green-500');
-                    document.getElementById('status-dot').classList.add('animate-ping');
-                    document.getElementById('status-text').innerText = "Máy chủ trực tuyến (Live)";
-                }
-            } else {
-                throw new Error("No config");
-            }
-        } catch (e) {
-            console.log("Running in Offline/GitHub mode");
-            document.getElementById('mode-status').innerText = "⚠️ Chế độ ngoại tuyến: Kết quả sẽ không được lưu chung";
-            document.getElementById('mode-status').classList.add('bg-orange-600');
-            document.getElementById('mode-status').classList.remove('hidden');
-            if(document.getElementById('status-text')) {
-                document.getElementById('status-text').innerText = "Máy chủ ngoại tuyến (Local Only)";
-            }
-        }
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
         const questions = [
-            { q: "Hồ sơ lý lịch của bị cáo cho biết bromine là:", a: ["Chất khí màu vàng lục, rất độc.", "Chất lỏng màu nâu đỏ, dễ bay hơi.", "Chất rắn màu đen tím, dễ thăng hoa.", "Kim loại dẫn điện tốt, dùng làm dây dẫn."], c: 1, e: "bromine là phi kim duy nhất ở thể lỏng ở ĐK thường, màu nâu đỏ đặc trưng." },
+            { q: "Hồ sơ lý lịch của bị cáo cho biết bromine là:", a: ["Chất khí màu vàng lục, rất độc.", "Chất lỏng màu nâu đỏ, dễ bay hơi.", "Chất rắn màu đen tím, dễ thăng hoa.", "Kim loại dẫn điện tốt, dùng làm dây dẫn."], c: 1, e: "bromine là phi kim duy nhất ở thể lỏng ở điều kiện thường, có màu nâu đỏ đặc trưng." },
             { q: "Tính chất nguy hiểm của bromine là:", a: ["Không phản ứng hóa học", "Dễ bay hơi, gây kích ứng mạnh", "Không độc", "Không tan trong nước"], c: 1, e: "Hơi bromine cực kỳ độc, gây kích ứng mạnh hệ hô hấp và có thể gây bỏng hóa chất nặng." },
             { q: "So với fluorine và chlorine, bromine có:", a: ["Tính oxi hóa mạnh nhất", "Tính oxi hóa yếu nhất", "Tính oxi hóa trung bình", "Không có tính oxi hóa"], c: 2, e: "Trong nhóm halogen, tính oxi hóa giảm dần từ fluorine > chlorine > bromine > iodine." },
             { q: "Bị cáo bromine được minh oan là 'người bảo vệ' vì hợp chất của nó dùng để:", a: ["Sản xuất muối ăn cho con người.", "Sản xuất chất chống cháy cho vật liệu.", "Tẩy trắng quần áo nhanh chóng.", "Chế tạo vỏ máy bay siêu nhẹ."], c: 1, e: "Hợp chất của bromine là thành phần chính trong các chất chống cháy cho vật liệu xây dựng và đồ điện tử." },
@@ -205,45 +172,29 @@
         const urlParams = new URLSearchParams(window.location.search);
         const isTeacher = urlParams.get('role') === 'teacher';
 
-        function switchView() {
-            document.getElementById('student-view').classList.toggle('hidden', isTeacher);
-            document.getElementById('teacher-view').classList.toggle('hidden', !isTeacher);
-            if (isTeacher) {
-                if (db) listenToVotes();
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('student-view').classList.toggle('hidden', isTeacher);
+                document.getElementById('teacher-view').classList.toggle('hidden', !isTeacher);
+                if (isTeacher) listenToVotes(); else startQuiz();
             } else {
-                startQuiz();
+                signInAnonymously(auth);
             }
-        }
-
-        // Khởi động giao diện ngay lập tức
-        switchView();
-
-        if (auth) {
-            const initAuth = async () => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                } catch (err) { console.error(err); }
-            };
-            onAuthStateChanged(auth, (user) => { if (user) switchView(); });
-            initAuth();
-        }
+        });
 
         function listenToVotes() {
-            if (!db) return;
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'verdicts'), (snap) => {
+            onSnapshot(collection(db, 'verdicts'), (snap) => {
                 let total = 0, guilty = 0, useful = 0;
                 snap.forEach(doc => {
                     total++;
                     if (doc.data().isGuilty) guilty++; else useful++;
                 });
+                
+                document.getElementById('teacher-total-votes').innerText = total;
+                document.getElementById('teacher-val-useful').innerText = useful;
+                document.getElementById('teacher-val-guilty').innerText = guilty;
+
                 if (total > 0) {
-                    document.getElementById('teacher-total-votes').innerText = total;
-                    document.getElementById('teacher-val-useful').innerText = useful;
-                    document.getElementById('teacher-val-guilty').innerText = guilty;
                     const max = Math.max(useful, guilty, 1);
                     document.getElementById('teacher-bar-useful').style.height = `${(useful / max) * 100}%`;
                     document.getElementById('teacher-bar-guilty').style.height = `${(guilty / max) * 100}%`;
@@ -255,15 +206,6 @@
                     else { stamp.innerText = "HÒA PHIẾU"; stamp.className = "verdict-stamp text-yellow-500 border-yellow-500"; }
                 }
             });
-        }
-
-        async function submitVote(s) {
-            if (!db || !auth || !auth.currentUser) return;
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'verdicts'), {
-                    score: s, isGuilty: s < 3, timestamp: serverTimestamp()
-                });
-            } catch (err) { console.error(err); }
         }
 
         function startQuiz() {
@@ -289,40 +231,24 @@
                 btn.onclick = () => {
                     const btns = document.querySelectorAll('.btn-choice');
                     btns.forEach(b => b.disabled = true);
-                    if (i === q.c) { score++; btn.classList.add('correct'); showFeedback(true, q.e); } 
-                    else { btn.classList.add('wrong'); btns[q.c].classList.add('correct'); showFeedback(false, q.e); }
+                    if (i === q.c) { score++; btn.classList.add('correct'); } else { btn.classList.add('wrong'); btns[q.c].classList.add('correct'); }
+                    document.getElementById('feedback-box').innerText = (i === q.c ? "CHẤP NHẬN: " : "BÁC BỎ: ") + q.e;
+                    document.getElementById('feedback-box').className = `mt-6 p-4 rounded-lg text-center font-bold border ${i === q.c ? 'bg-green-900/20 text-green-400 border-green-700' : 'bg-red-900/20 text-red-400 border-red-700'}`;
+                    document.getElementById('feedback-box').classList.remove('hidden');
                     document.getElementById('next-question-btn').classList.remove('hidden');
-                    if (currentQIdx === questions.length - 1) document.getElementById('next-question-btn').innerText = "Gửi phán quyết";
                 };
                 grid.appendChild(btn);
             });
         }
 
-        function showFeedback(isCorrect, text) {
-            const fb = document.getElementById('feedback-box');
-            fb.classList.remove('hidden');
-            fb.innerText = (isCorrect ? "CHẤP NHẬN: " : "BÁC BỎ: ") + text;
-            fb.className = `mt-6 p-4 rounded-lg text-center font-bold border ${isCorrect ? 'bg-green-900/20 text-green-400 border-green-700' : 'bg-red-900/20 text-red-400 border-red-700'}`;
-        }
-
         document.getElementById('next-question-btn').onclick = () => {
             currentQIdx++;
-            if (currentQIdx < questions.length) renderQuestion();
-            else {
+            if (currentQIdx < questions.length) renderQuestion(); else {
                 document.getElementById('quiz-container').classList.add('hidden');
                 document.getElementById('student-end-screen').classList.remove('hidden');
-                if(!db) document.getElementById('student-end-msg').innerText += " (Lưu ý: Bạn đang chơi ngoại tuyến, kết quả chỉ hiện thị trên máy này)";
-                submitVote(score);
+                addDoc(collection(db, 'verdicts'), { score: score, isGuilty: score < 3, timestamp: serverTimestamp() });
             }
         };
-
-        if(document.getElementById('copy-student-link')) {
-            document.getElementById('copy-student-link').onclick = () => {
-                const url = window.location.href.split('?')[0];
-                const el = document.createElement('textarea'); el.value = url; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
-                alert("Đã sao chép link học sinh!");
-            };
-        }
     </script>
 </body>
 </html>
