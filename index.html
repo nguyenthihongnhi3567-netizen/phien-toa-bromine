@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phiên Tòa Bromine - Phiên bản 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:wght@700;900&display=swap');
+        
+        body {
+            font-family: 'Merriweather', serif;
+            background-color: #1a1a1a;
+            color: #e5e5e5;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url('https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=2070');
+            background-size: cover;
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        .court-font { font-family: 'Playfair Display', serif; }
+
+        .btn-choice {
+            transition: all 0.2s ease;
+            border: 1px solid #4a3728;
+        }
+
+        .btn-choice:hover:not(:disabled) {
+            background-color: #4a3728;
+            transform: translateX(8px);
+        }
+
+        .correct { background-color: #166534 !important; border-color: #22c55e !important; }
+        .wrong { background-color: #991b1b !important; border-color: #ef4444 !important; }
+
+        .chart-bar {
+            transition: height 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .verdict-stamp {
+            transform: rotate(-12deg);
+            border: 6px solid;
+            padding: 1rem 2rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            animation: stampIn 0.5s ease-out;
+        }
+
+        @keyframes stampIn {
+            0% { transform: scale(3) rotate(-45deg); opacity: 0; }
+            100% { transform: scale(1) rotate(-12deg); opacity: 1; }
+        }
+
+        .teacher-glow {
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.25);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- GIAO DIỆN HỌC SINH (Hiển thị mặc định) -->
+    <div id="student-view" class="max-w-2xl w-full bg-[#2d241e] border-4 border-[#b8860b] rounded-lg shadow-2xl overflow-hidden hidden">
+        <div class="bg-[#4a3728] p-6 text-center border-b-4 border-[#b8860b]">
+            <h1 class="court-font text-3xl font-black text-[#d4af37] uppercase tracking-widest">Tòa Án Hóa Học</h1>
+            <p class="text-xs text-[#b8860b] mt-1 italic">Hồ sơ: 35-Bromine-2026 | Phiên tòa trực tuyến</p>
+        </div>
+
+        <div class="w-full bg-gray-800 h-2">
+            <div id="student-progress" class="bg-[#d4af37] h-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+
+        <div id="quiz-container" class="p-8">
+            <div class="mb-6">
+                <span id="question-number" class="text-[#b8860b] font-bold uppercase text-sm tracking-widest">Lời khai 1/5</span>
+                <h2 id="question-text" class="text-xl md:text-2xl font-bold mt-2 leading-tight text-white"></h2>
+            </div>
+
+            <div id="choices-grid" class="space-y-3"></div>
+
+            <div id="feedback-box" class="mt-6 p-4 rounded-lg hidden text-center font-bold border"></div>
+            
+            <button id="next-question-btn" class="mt-6 w-full bg-[#b8860b] hover:bg-[#d4af37] text-[#2d241e] font-black py-3 rounded uppercase transition-colors hidden shadow-lg">
+                Xác nhận lời khai
+            </button>
+        </div>
+
+        <div id="student-end-screen" class="p-12 text-center hidden">
+            <div class="text-6xl mb-4">⚖️</div>
+            <h2 class="court-font text-3xl font-bold text-[#d4af37] mb-4 uppercase">Phiếu biểu quyết đã gửi</h2>
+            <p class="text-gray-300 mb-8 font-light">Lá phiếu của bạn về bị cáo bromine đã được cập nhật vào hệ thống trung tâm năm 2026. Hãy quan sát màn hình giáo viên để biết phán quyết cuối cùng của cả lớp.</p>
+            <button onclick="location.reload()" class="text-[#b8860b] underline text-xs uppercase font-black tracking-widest opacity-60 hover:opacity-100 transition-opacity">Làm lại bài kiểm tra</button>
+        </div>
+    </div>
+
+    <!-- GIAO DIỆN MÁY CHỦ GIÁO VIÊN (Chỉ hiện khi có ?role=teacher) -->
+    <div id="teacher-view" class="max-w-6xl w-full bg-[#1a1512] border-4 border-[#b8860b] rounded-xl shadow-2xl overflow-hidden hidden teacher-glow">
+        <div class="bg-[#352a22] p-10 text-center border-b-4 border-[#b8860b]">
+            <h1 class="court-font text-5xl font-black text-[#d4af37] uppercase tracking-[0.25em] mb-3">HỘI ĐỒNG XÉT XỬ BROMINE - 2026</h1>
+            <div class="flex justify-center items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <span class="w-3 h-3 bg-green-500 rounded-full animate-ping"></span>
+                    <span class="text-sm font-black text-gray-400 uppercase tracking-widest">Máy chủ Live</span>
+                </div>
+                <div class="h-6 w-px bg-gray-600"></div>
+                <div class="text-[#b8860b] font-bold uppercase tracking-widest text-sm">Bị cáo: Bromine</div>
+            </div>
+        </div>
+
+        <!-- Công cụ hỗ trợ giáo viên -->
+        <div class="bg-black/20 p-4 border-b border-[#b8860b]/30 flex flex-wrap items-center justify-between gap-4 px-10">
+            <div class="text-xs text-gray-400 italic">Mẹo: Gửi link bên phải cho học sinh để tham gia biểu quyết.</div>
+            <button id="copy-student-link" class="bg-[#b8860b] hover:bg-[#d4af37] text-black px-4 py-2 rounded text-[10px] font-black uppercase transition-all shadow-lg active:scale-95">
+                Sao chép Link dành cho Học sinh
+            </button>
+        </div>
+
+        <div class="p-10 grid grid-cols-1 lg:grid-cols-3 gap-12">
+            <div class="lg:col-span-1 space-y-8">
+                <div class="bg-black/40 p-8 rounded-lg border border-[#b8860b]/30 text-center">
+                    <p class="text-xs text-[#b8860b] uppercase font-black mb-2 tracking-widest">Tổng số bồi thẩm viên</p>
+                    <h3 id="teacher-total-votes" class="text-7xl font-black text-white">0</h3>
+                </div>
+
+                <div id="live-verdict-box" class="bg-black/40 p-8 rounded-lg border border-[#b8860b]/30 flex flex-col items-center justify-center min-h-[250px]">
+                    <p class="text-xs text-[#b8860b] uppercase font-black mb-6 tracking-widest">Phán quyết chung</p>
+                    <div id="teacher-stamp" class="hidden"></div>
+                    <p id="teacher-waiting-msg" class="text-gray-500 italic text-sm text-center">Đang thu thập phiếu biểu quyết...</p>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 bg-black/20 p-10 rounded-lg border border-[#b8860b]/30">
+                <h3 class="text-center text-[#d4af37] font-bold uppercase text-sm mb-12 tracking-[0.3em]">Biểu quyết của bồi thẩm đoàn</h3>
+                
+                <div class="flex items-end justify-around h-72 border-b-2 border-gray-700 pb-4 gap-8">
+                    <div class="flex flex-col items-center flex-1 max-w-[180px]">
+                        <div id="teacher-val-useful" class="text-4xl font-black text-green-400 mb-3">0</div>
+                        <div id="teacher-bar-useful" class="chart-bar w-full bg-gradient-to-t from-green-950 via-green-700 to-green-500 rounded-t-lg shadow-[0_0_30px_rgba(34,197,94,0.3)]" style="height: 5%"></div>
+                        <span class="mt-5 text-sm font-black text-green-200 uppercase text-center leading-tight tracking-wider">Vô tội<br>(Hữu ích)</span>
+                    </div>
+
+                    <div class="flex flex-col items-center flex-1 max-w-[180px]">
+                        <div id="teacher-val-guilty" class="text-4xl font-black text-red-400 mb-3">0</div>
+                        <div id="teacher-bar-guilty" class="chart-bar w-full bg-gradient-to-t from-red-950 via-red-700 to-red-500 rounded-t-lg shadow-[0_0_30px_rgba(239,68,68,0.3)]" style="height: 5%"></div>
+                        <span class="mt-5 text-sm font-black text-red-200 uppercase text-center leading-tight tracking-wider">Có tội<br>(Nguy hiểm)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-[#2d241e] p-5 text-center text-[10px] text-gray-500 uppercase tracking-[0.4em]">
+            Chemistry Justice Platform &copy; 2026 - Forensic Bromine Analysis
+        </div>
+    </div>
+
+    <!-- Firebase & Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Config
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'bromine-trial-2026-v3';
+
+        const questions = [
+            { 
+                q: "Hồ sơ lý lịch của bị cáo cho biết bromine là:", 
+                a: ["Chất khí màu vàng lục, rất độc.", "Chất lỏng màu nâu đỏ, dễ bay hơi.", "Chất rắn màu đen tím, dễ thăng hoa.", "Kim loại dẫn điện tốt, dùng làm dây dẫn."], 
+                c: 1, 
+                e: "bromine là phi kim duy nhất ở thể lỏng ở điều kiện thường, có màu nâu đỏ đặc trưng." 
+            },
+            { 
+                q: "Tính chất nguy hiểm của bromine là:", 
+                a: ["Không phản ứng hóa học", "Dễ bay hơi, gây kích ứng mạnh", "Không độc", "Không tan trong nước"], 
+                c: 1, 
+                e: "Hơi bromine cực kỳ độc, gây kích ứng mạnh hệ hô hấp và có thể gây bỏng hóa chất nặng." 
+            },
+            { 
+                q: "So với fluorine và chlorine, bromine có:", 
+                a: ["Tính oxi hóa mạnh nhất", "Tính oxi hóa yếu nhất", "Tính oxi hóa trung bình", "Không có tính oxi hóa"], 
+                c: 2, 
+                e: "Trong nhóm halogen, tính oxi hóa giảm dần từ fluorine > chlorine > bromine > iodine." 
+            },
+            { 
+                q: "Bị cáo bromine được minh oan là 'người bảo vệ' vì hợp chất của nó dùng để:", 
+                a: ["Sản xuất muối ăn cho con người.", "Sản xuất chất chống cháy cho vật liệu.", "Tẩy trắng quần áo nhanh chóng.", "Chế tạo vỏ máy bay siêu nhẹ."], 
+                c: 1, 
+                e: "Hợp chất của bromine là thành phần chính trong các chất chống cháy cho vật liệu xây dựng và đồ điện tử." 
+            },
+            { 
+                q: "Nhận định nào đúng nhất về bị cáo bromine?", 
+                a: ["Bromine hoàn toàn vô hại", "Bromine chỉ có hại", "Bromine nguy hiểm nhưng có thể kiểm soát và có ích", "Bromine không có ứng dụng"], 
+                c: 2, 
+                e: "Dù độc hại, nhưng nếu được kiểm soát tốt, bromine mang lại nhiều giá trị to lớn cho y tế và công nghiệp." 
+            }
+        ];
+
+        let currentQIdx = 0;
+        let score = 0;
+        let isTeacher = false;
+
+        // Xử lý vai trò từ URL
+        const urlParams = new URLSearchParams(window.location.search);
+        isTeacher = (urlParams.get('role') === 'teacher');
+
+        const switchView = () => {
+            document.getElementById('student-view').classList.toggle('hidden', isTeacher);
+            document.getElementById('teacher-view').classList.toggle('hidden', !isTeacher);
+            if (isTeacher) listenToVotes();
+            else startQuiz();
+        };
+
+        // Nút hỗ trợ copy link cho Giáo viên
+        document.getElementById('copy-student-link').onclick = () => {
+            const currentUrl = window.location.href.split('?')[0];
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = currentUrl;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            
+            const btn = document.getElementById('copy-student-link');
+            const originalText = btn.innerText;
+            btn.innerText = "ĐÃ SAO CHÉP LINK!";
+            btn.style.backgroundColor = "#22c55e";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.backgroundColor = "#b8860b";
+            }, 2000);
+        };
+
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) { console.error("Auth failed", err); }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) switchView();
+        });
+
+        const listenToVotes = () => {
+            const votesRef = collection(db, 'artifacts', appId, 'public', 'data', 'verdicts');
+            onSnapshot(votesRef, (snapshot) => {
+                let total = 0, guilty = 0, useful = 0;
+                snapshot.forEach(doc => {
+                    total++;
+                    if (doc.data().isGuilty) guilty++;
+                    else useful++;
+                });
+
+                if (total > 0) {
+                    document.getElementById('teacher-total-votes').innerText = total;
+                    document.getElementById('teacher-val-useful').innerText = useful;
+                    document.getElementById('teacher-val-guilty').innerText = guilty;
+
+                    const max = Math.max(useful, guilty, 1);
+                    document.getElementById('teacher-bar-useful').style.height = `${(useful / max) * 100}%`;
+                    document.getElementById('teacher-bar-guilty').style.height = `${(guilty / max) * 100}%`;
+
+                    const stamp = document.getElementById('teacher-stamp');
+                    const msg = document.getElementById('teacher-waiting-msg');
+                    stamp.classList.remove('hidden');
+                    msg.classList.add('hidden');
+
+                    if (useful > guilty) {
+                        stamp.innerText = "BROMINE: VÔ TỘI";
+                        stamp.className = "verdict-stamp text-green-500 border-green-500";
+                    } else if (guilty > useful) {
+                        stamp.innerText = "BROMINE: CÓ TỘI";
+                        stamp.className = "verdict-stamp text-red-500 border-red-500";
+                    } else {
+                        stamp.innerText = "HÒA PHIẾU";
+                        stamp.className = "verdict-stamp text-yellow-500 border-yellow-500";
+                    }
+                }
+            });
+        };
+
+        const submitVote = async (s) => {
+            if (!auth.currentUser) return;
+            const isGuilty = s < 3;
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'verdicts'), {
+                    score: s,
+                    isGuilty: isGuilty,
+                    timestamp: serverTimestamp()
+                });
+            } catch (err) { console.error("Submit failed", err); }
+        };
+
+        function startQuiz() {
+            currentQIdx = 0; score = 0;
+            document.getElementById('quiz-container').classList.remove('hidden');
+            document.getElementById('student-end-screen').classList.add('hidden');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = questions[currentQIdx];
+            document.getElementById('question-number').innerText = `Lời khai ${currentQIdx + 1}/${questions.length}`;
+            document.getElementById('question-text').innerText = q.q;
+            document.getElementById('student-progress').style.width = `${(currentQIdx / questions.length) * 100}%`;
+            const grid = document.getElementById('choices-grid');
+            grid.innerHTML = '';
+            document.getElementById('feedback-box').classList.add('hidden');
+            document.getElementById('next-question-btn').classList.add('hidden');
+            q.a.forEach((choice, i) => {
+                const btn = document.createElement('button');
+                btn.className = "btn-choice w-full text-left p-4 rounded bg-[#3d2e24] flex items-center";
+                btn.innerHTML = `<span class="w-8 font-bold text-[#b8860b]">${String.fromCharCode(65+i)}.</span> ${choice}`;
+                btn.onclick = () => handleChoice(btn, i);
+                grid.appendChild(btn);
+            });
+        }
+
+        function handleChoice(btn, i) {
+            const q = questions[currentQIdx];
+            const buttons = document.querySelectorAll('.btn-choice');
+            buttons.forEach(b => b.disabled = true);
+            if (i === q.c) { score++; btn.classList.add('correct'); showFeedback(true, q.e); } 
+            else { btn.classList.add('wrong'); buttons[q.c].classList.add('correct'); showFeedback(false, q.e); }
+            document.getElementById('next-question-btn').classList.remove('hidden');
+            if (currentQIdx === questions.length - 1) document.getElementById('next-question-btn').innerText = "Gửi phán quyết cuối cùng";
+        }
+
+        function showFeedback(isCorrect, text) {
+            const fb = document.getElementById('feedback-box');
+            fb.classList.remove('hidden');
+            fb.innerText = (isCorrect ? "CHẤP NHẬN: " : "BÁC BỎ: ") + text;
+            fb.className = `mt-6 p-4 rounded-lg text-center font-bold border ${isCorrect ? 'bg-green-900/20 text-green-400 border-green-700' : 'bg-red-900/20 text-red-400 border-red-700'}`;
+        }
+
+        document.getElementById('next-question-btn').onclick = () => {
+            currentQIdx++;
+            if (currentQIdx < questions.length) renderQuestion();
+            else finishQuiz();
+        };
+
+        function finishQuiz() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('student-end-screen').classList.remove('hidden');
+            document.getElementById('student-progress').style.width = "100%";
+            submitVote(score);
+        }
+
+        initAuth();
+    </script>
+</body>
+</html>
