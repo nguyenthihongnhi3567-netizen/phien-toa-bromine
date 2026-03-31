@@ -23,6 +23,7 @@
         .btn-choice {
             transition: all 0.2s ease;
             border: 1px solid #4a3728;
+            background-color: #3d2e24;
         }
 
         .btn-choice:hover:not(:disabled) {
@@ -58,7 +59,12 @@
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
 
-    <!-- STUDENT VIEW -->
+    <!-- THÔNG BÁO TRẠNG THÁI KẾT NỐI -->
+    <div id="conn-status" class="fixed top-0 left-0 w-full text-white text-[10px] py-1 px-4 text-center z-[100] font-bold uppercase hidden bg-gray-600">
+        Đang khởi tạo hệ thống...
+    </div>
+
+    <!-- GIAO DIỆN HỌC SINH -->
     <div id="student-view" class="max-w-2xl w-full bg-[#2d241e] border-4 border-[#b8860b] rounded-lg shadow-2xl overflow-hidden hidden">
         <div class="bg-[#4a3728] p-6 text-center border-b-4 border-[#b8860b]">
             <h1 class="court-font text-3xl font-black text-[#d4af37] uppercase tracking-widest">Tòa Án Hóa Học</h1>
@@ -72,7 +78,7 @@
         <div id="quiz-container" class="p-8">
             <div class="mb-6">
                 <span id="question-number" class="text-[#b8860b] font-bold uppercase text-sm tracking-widest">Lời khai 1/5</span>
-                <h2 id="question-text" class="text-xl md:text-2xl font-bold mt-2 leading-tight text-white"></h2>
+                <h2 id="question-text" class="text-xl md:text-2xl font-bold mt-2 leading-tight text-white">Đang tải câu hỏi...</h2>
             </div>
 
             <div id="choices-grid" class="space-y-3"></div>
@@ -92,14 +98,14 @@
         </div>
     </div>
 
-    <!-- TEACHER VIEW -->
+    <!-- GIAO DIỆN MÁY CHỦ GIÁO VIÊN -->
     <div id="teacher-view" class="max-w-6xl w-full bg-[#1a1512] border-4 border-[#b8860b] rounded-xl shadow-2xl overflow-hidden hidden teacher-glow">
         <div class="bg-[#352a22] p-10 text-center border-b-4 border-[#b8860b]">
             <h1 class="court-font text-5xl font-black text-[#d4af37] uppercase tracking-[0.25em] mb-3">HỘI ĐỒNG XÉT XỬ BROMINE - 2026</h1>
             <div class="flex justify-center items-center gap-6">
                 <div class="flex items-center gap-3">
-                    <span id="status-dot" class="w-3 h-3 bg-green-500 rounded-full animate-ping"></span>
-                    <span class="text-sm font-black text-gray-400 uppercase tracking-widest">Máy chủ Live</span>
+                    <span id="status-dot" class="w-3 h-3 bg-gray-500 rounded-full"></span>
+                    <span id="status-text" class="text-sm font-black text-gray-400 uppercase tracking-widest">Đang kiểm tra kết nối...</span>
                 </div>
                 <div class="h-6 w-px bg-gray-600"></div>
                 <div class="text-[#b8860b] font-bold uppercase tracking-widest text-sm">Bị cáo: Bromine</div>
@@ -156,10 +162,6 @@
             appId: "1:138008156700:web:2ba8a196cd49234b041dd9"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
         const questions = [
             { q: "Hồ sơ lý lịch của bị cáo cho biết bromine là:", a: ["Chất khí màu vàng lục, rất độc.", "Chất lỏng màu nâu đỏ, dễ bay hơi.", "Chất rắn màu đen tím, dễ thăng hoa.", "Kim loại dẫn điện tốt, dùng làm dây dẫn."], c: 1, e: "bromine là phi kim duy nhất ở thể lỏng ở điều kiện thường, có màu nâu đỏ đặc trưng." },
             { q: "Tính chất nguy hiểm của bromine là:", a: ["Không phản ứng hóa học", "Dễ bay hơi, gây kích ứng mạnh", "Không độc", "Không tan trong nước"], c: 1, e: "Hơi bromine cực kỳ độc, gây kích ứng mạnh hệ hô hấp và có thể gây bỏng hóa chất nặng." },
@@ -169,20 +171,126 @@
         ];
 
         let currentQIdx = 0, score = 0;
+        let db = null;
+        let auth = null;
+
         const urlParams = new URLSearchParams(window.location.search);
         const isTeacher = urlParams.get('role') === 'teacher';
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('student-view').classList.toggle('hidden', isTeacher);
-                document.getElementById('teacher-view').classList.toggle('hidden', !isTeacher);
-                if (isTeacher) listenToVotes(); else startQuiz();
+        // 1. Khởi tạo Giao diện ngay lập tức
+        function initUI() {
+            if (isTeacher) {
+                document.getElementById('teacher-view').classList.remove('hidden');
+                document.getElementById('student-view').classList.add('hidden');
             } else {
-                signInAnonymously(auth);
+                document.getElementById('student-view').classList.remove('hidden');
+                document.getElementById('teacher-view').classList.add('hidden');
+                startQuiz();
             }
-        });
+        }
+
+        // 2. Logic Trò chơi
+        function startQuiz() {
+            currentQIdx = 0; score = 0;
+            document.getElementById('quiz-container').classList.remove('hidden');
+            document.getElementById('student-end-screen').classList.add('hidden');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = questions[currentQIdx];
+            document.getElementById('question-number').innerText = `Lời khai ${currentQIdx + 1}/${questions.length}`;
+            document.getElementById('question-text').innerText = q.q;
+            document.getElementById('student-progress').style.width = `${(currentQIdx / questions.length) * 100}%`;
+            
+            const grid = document.getElementById('choices-grid');
+            grid.innerHTML = '';
+            document.getElementById('feedback-box').classList.add('hidden');
+            document.getElementById('next-question-btn').classList.add('hidden');
+            
+            q.a.forEach((choice, i) => {
+                const btn = document.createElement('button');
+                btn.className = "btn-choice w-full text-left p-4 rounded text-white flex items-center";
+                btn.innerHTML = `<span class="w-8 font-bold text-[#b8860b]">${String.fromCharCode(65+i)}.</span> ${choice}`;
+                btn.onclick = () => {
+                    const btns = grid.querySelectorAll('button');
+                    btns.forEach(b => b.disabled = true);
+                    
+                    if (i === q.c) {
+                        score++;
+                        btn.classList.add('correct');
+                        showFeedback(true, q.e);
+                    } else {
+                        btn.classList.add('wrong');
+                        btns[q.c].classList.add('correct');
+                        showFeedback(false, q.e);
+                    }
+                    document.getElementById('next-question-btn').classList.remove('hidden');
+                    if (currentQIdx === questions.length - 1) {
+                        document.getElementById('next-question-btn').innerText = "Gửi phán quyết cuối cùng";
+                    }
+                };
+                grid.appendChild(btn);
+            });
+        }
+
+        function showFeedback(isCorrect, text) {
+            const fb = document.getElementById('feedback-box');
+            fb.classList.remove('hidden');
+            fb.innerText = (isCorrect ? "CHẤP NHẬN: " : "BÁC BỎ: ") + text;
+            fb.className = `mt-6 p-4 rounded-lg text-center font-bold border ${isCorrect ? 'bg-green-900/20 text-green-400 border-green-700' : 'bg-red-900/20 text-red-400 border-red-700'}`;
+        }
+
+        document.getElementById('next-question-btn').onclick = () => {
+            currentQIdx++;
+            if (currentQIdx < questions.length) {
+                renderQuestion();
+            } else {
+                document.getElementById('quiz-container').classList.add('hidden');
+                document.getElementById('student-end-screen').classList.remove('hidden');
+                document.getElementById('student-progress').style.width = '100%';
+                submitToFirebase(score);
+            }
+        };
+
+        // 3. Kết nối Firebase (Chạy ngầm)
+        async function connectFirebase() {
+            const status = document.getElementById('conn-status');
+            status.classList.remove('hidden');
+            
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        status.innerText = "📡 HỆ THỐNG TRỰC TUYẾN: ĐÃ KẾT NỐI";
+                        status.classList.replace('bg-gray-600', 'bg-green-600');
+                        if (isTeacher) listenToVotes();
+                        
+                        if(document.getElementById('status-dot')) {
+                            document.getElementById('status-dot').classList.replace('bg-gray-500', 'bg-green-500');
+                            document.getElementById('status-dot').classList.add('animate-ping');
+                            document.getElementById('status-text').innerText = "Máy chủ trực tuyến (Live)";
+                        }
+                    } else {
+                        signInAnonymously(auth);
+                    }
+                });
+
+                // Tự động ẩn thông báo trạng thái sau 3s
+                setTimeout(() => status.classList.add('hidden'), 3000);
+
+            } catch (err) {
+                console.error("Firebase error:", err);
+                status.innerText = "⚠️ CHẾ ĐỘ NGOẠI TUYẾN (LỖI KẾT NỐI)";
+                status.classList.replace('bg-gray-600', 'bg-orange-600');
+            }
+        }
 
         function listenToVotes() {
+            if (!db) return;
             onSnapshot(collection(db, 'verdicts'), (snap) => {
                 let total = 0, guilty = 0, useful = 0;
                 snap.forEach(doc => {
@@ -198,56 +306,40 @@
                     const max = Math.max(useful, guilty, 1);
                     document.getElementById('teacher-bar-useful').style.height = `${(useful / max) * 100}%`;
                     document.getElementById('teacher-bar-guilty').style.height = `${(guilty / max) * 100}%`;
+                    
                     const stamp = document.getElementById('teacher-stamp');
                     stamp.classList.remove('hidden');
                     document.getElementById('teacher-waiting-msg').classList.add('hidden');
-                    if (useful > guilty) { stamp.innerText = "BROMINE: VÔ TỘI"; stamp.className = "verdict-stamp text-green-500 border-green-500"; }
-                    else if (guilty > useful) { stamp.innerText = "BROMINE: CÓ TỘI"; stamp.className = "verdict-stamp text-red-500 border-red-500"; }
-                    else { stamp.innerText = "HÒA PHIẾU"; stamp.className = "verdict-stamp text-yellow-500 border-yellow-500"; }
+                    
+                    if (useful > guilty) {
+                        stamp.innerText = "BROMINE: VÔ TỘI";
+                        stamp.className = "verdict-stamp text-green-500 border-green-500";
+                    } else if (guilty > useful) {
+                        stamp.innerText = "BROMINE: CÓ TỘI";
+                        stamp.className = "verdict-stamp text-red-500 border-red-500";
+                    } else {
+                        stamp.innerText = "HÒA PHIẾU";
+                        stamp.className = "verdict-stamp text-yellow-500 border-yellow-500";
+                    }
                 }
             });
         }
 
-        function startQuiz() {
-            currentQIdx = 0; score = 0;
-            document.getElementById('quiz-container').classList.remove('hidden');
-            document.getElementById('student-end-screen').classList.add('hidden');
-            renderQuestion();
+        async function submitToFirebase(s) {
+            if (!db || !auth || !auth.currentUser) return;
+            try {
+                await addDoc(collection(db, 'verdicts'), {
+                    score: s,
+                    isGuilty: s < 3,
+                    timestamp: serverTimestamp()
+                });
+            } catch (err) { console.error("Submit error:", err); }
         }
 
-        function renderQuestion() {
-            const q = questions[currentQIdx];
-            document.getElementById('question-number').innerText = `Lời khai ${currentQIdx + 1}/${questions.length}`;
-            document.getElementById('question-text').innerText = q.q;
-            document.getElementById('student-progress').style.width = `${(currentQIdx / questions.length) * 100}%`;
-            const grid = document.getElementById('choices-grid');
-            grid.innerHTML = '';
-            document.getElementById('feedback-box').classList.add('hidden');
-            document.getElementById('next-question-btn').classList.add('hidden');
-            q.a.forEach((choice, i) => {
-                const btn = document.createElement('button');
-                btn.className = "btn-choice w-full text-left p-4 rounded bg-[#3d2e24] flex items-center";
-                btn.innerHTML = `<span class="w-8 font-bold text-[#b8860b]">${String.fromCharCode(65+i)}.</span> ${choice}`;
-                btn.onclick = () => {
-                    const btns = document.querySelectorAll('.btn-choice');
-                    btns.forEach(b => b.disabled = true);
-                    if (i === q.c) { score++; btn.classList.add('correct'); } else { btn.classList.add('wrong'); btns[q.c].classList.add('correct'); }
-                    document.getElementById('feedback-box').innerText = (i === q.c ? "CHẤP NHẬN: " : "BÁC BỎ: ") + q.e;
-                    document.getElementById('feedback-box').className = `mt-6 p-4 rounded-lg text-center font-bold border ${i === q.c ? 'bg-green-900/20 text-green-400 border-green-700' : 'bg-red-900/20 text-red-400 border-red-700'}`;
-                    document.getElementById('feedback-box').classList.remove('hidden');
-                    document.getElementById('next-question-btn').classList.remove('hidden');
-                };
-                grid.appendChild(btn);
-            });
-        }
-
-        document.getElementById('next-question-btn').onclick = () => {
-            currentQIdx++;
-            if (currentQIdx < questions.length) renderQuestion(); else {
-                document.getElementById('quiz-container').classList.add('hidden');
-                document.getElementById('student-end-screen').classList.remove('hidden');
-                addDoc(collection(db, 'verdicts'), { score: score, isGuilty: score < 3, timestamp: serverTimestamp() });
-            }
+        // Khởi động toàn bộ
+        window.onload = () => {
+            initUI();
+            connectFirebase();
         };
     </script>
 </body>
