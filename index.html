@@ -49,35 +49,81 @@
             0% { transform: scale(3) rotate(-45deg); opacity: 0; }
             100% { transform: scale(1) rotate(-12deg); opacity: 1; }
         }
+
+        /* Toast notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #b8860b;
+            color: #000;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 300;
+            left: 50%;
+            bottom: 30px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast">Đã sao chép link!</div>
 
     <!-- LOADING OVERLAY -->
     <div id="loading-overlay" class="fixed inset-0 bg-black z-[200] flex items-center justify-center flex-col p-6 text-center">
         <div id="loading-spinner" class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#b8860b] mb-4"></div>
         <p class="text-[#b8860b] font-bold tracking-widest animate-pulse uppercase mb-2" id="loading-text">Đang kết nối tòa án...</p>
-        <p id="error-details" class="text-red-500 text-xs font-mono max-w-md hidden"></p>
-        <button id="retry-btn" class="mt-4 px-6 py-2 bg-[#b8860b] text-black font-bold rounded uppercase hidden hover:bg-[#d4af37]">Thử lại</button>
+        
+        <div id="error-container" class="hidden max-w-lg">
+            <p class="text-red-500 font-bold mb-2">LỖI XÁC THỰC FIREBASE</p>
+            <p id="error-details" class="text-white text-xs font-mono bg-red-900/20 p-4 rounded border border-red-500/50 mb-4 whitespace-pre-wrap"></p>
+            
+            <div class="bg-gray-800 p-4 rounded text-left mb-6">
+                <p class="text-[#d4af37] text-xs font-bold mb-2 uppercase tracking-tight underline">Cách khắc phục cho Giáo viên:</p>
+                <ol class="text-[10px] text-gray-300 space-y-2 list-decimal ml-4">
+                    <li>Vào <b>Firebase Console</b> > <b>Authentication</b>.</li>
+                    <li>Tab <b>Sign-in method</b> > Nhấn <b>Ajouter một fournisseur</b>.</li>
+                    <li>Chọn <b>Anonyme</b> (Ẩn danh) và nhấn <b>Activer</b> > <b>Enregistrer</b>.</li>
+                    <li>Vào tab <b>Paramètres</b> > <b>Domaines autorisés</b> và thêm tên miền GitHub của bạn.</li>
+                </ol>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <button id="retry-btn" class="w-full py-3 bg-[#b8860b] text-black font-black rounded uppercase hover:bg-[#d4af37] transition-all">Thử lại</button>
+                <button id="skip-auth-btn" class="w-full py-2 text-gray-400 text-[10px] hover:text-white uppercase tracking-widest">Tiếp tục ở chế độ ngoại tuyến (Không gửi được kết quả)</button>
+            </div>
+        </div>
     </div>
 
     <!-- STUDENT VIEW -->
     <div id="student-view" class="max-w-2xl w-full bg-[#2d241e] border-4 border-[#b8860b] rounded-lg shadow-2xl overflow-hidden hidden">
+        <div id="offline-tag" class="bg-red-600 text-white text-[10px] py-1 text-center font-bold hidden uppercase tracking-widest">Chế độ ngoại tuyến - Không gửi kết quả cho GV</div>
         <div class="bg-[#4a3728] p-6 text-center border-b-4 border-[#b8860b]">
             <h1 class="court-font text-3xl font-black text-[#d4af37] uppercase tracking-widest">Tòa Án Hóa Học</h1>
             <p class="text-xs text-[#b8860b] mt-1 italic">Học sinh tham gia xét xử trực tuyến</p>
         </div>
 
-        <!-- NAME SCREEN -->
         <div id="name-screen" class="p-10 text-center">
             <h2 class="text-xl font-bold mb-6 text-white">Vui lòng nhập danh tính Bồi thẩm viên</h2>
             <input type="text" id="student-name" placeholder="Họ và tên của bạn..." class="w-full p-4 bg-black/30 border-2 border-[#4a3728] rounded-lg mb-6 text-center focus:border-[#d4af37] outline-none text-white">
-            <button id="start-quiz-btn" class="w-full bg-[#b8860b] hover:bg-[#d4af37] text-black font-black py-4 rounded uppercase transition-all shadow-lg active:scale-95 mb-4">
+            <button id="start-quiz-btn" class="w-full bg-[#b8860b] hover:bg-[#d4af37] text-black font-black py-4 rounded uppercase transition-all shadow-lg active:scale-95">
                 Vào phòng xét xử
             </button>
         </div>
 
-        <!-- QUIZ CONTAINER -->
         <div id="quiz-container" class="p-8 hidden">
             <div class="w-full bg-gray-800 h-2 mb-6 rounded-full overflow-hidden">
                 <div id="student-progress" class="bg-[#d4af37] h-full transition-all duration-500" style="width: 0%"></div>
@@ -93,11 +139,10 @@
             </button>
         </div>
 
-        <!-- END SCREEN -->
         <div id="student-end-screen" class="p-12 text-center hidden">
             <div class="text-6xl mb-6">⚖️</div>
             <h2 class="court-font text-3xl font-bold text-[#d4af37] mb-4 uppercase">Phán quyết đã nộp</h2>
-            <p class="text-gray-300 mb-8 font-light italic">Lá phiếu của bạn đã được chuyển tới Hội đồng xét xử trung tâm. Hãy xem kết quả chung cuộc trên màn hình chính.</p>
+            <p id="end-status-msg" class="text-gray-300 mb-8 font-light italic">Lá phiếu của bạn đã được chuyển tới Hội đồng xét xử trung tâm.</p>
             <button onclick="location.reload()" class="text-[#b8860b] border border-[#b8860b] px-6 py-2 rounded-full text-xs uppercase font-black hover:bg-[#b8860b] hover:text-black transition-all">Làm lại bài kiểm tra</button>
         </div>
     </div>
@@ -108,77 +153,68 @@
             <h1 class="court-font text-4xl font-black text-[#d4af37] uppercase tracking-[0.2em] mb-2">DỮ LIỆU PHÁN QUYẾT BROMINE</h1>
             <div class="flex justify-center items-center gap-4">
                 <span id="status-dot" class="w-3 h-3 bg-green-500 rounded-full animate-ping"></span>
-                <span class="text-xs font-bold text-green-400 uppercase tracking-widest">Hệ thống đang trực tuyến (Góc Giáo Viên)</span>
+                <span class="text-xs font-bold text-green-400 uppercase tracking-widest">Hệ thống đang trực tuyến</span>
             </div>
         </div>
 
         <div class="p-10 grid grid-cols-1 lg:grid-cols-3 gap-10">
-            <!-- Left Stats -->
-            <div class="space-y-6">
-                <div class="bg-black/40 p-6 rounded-lg border border-[#b8860b]/30 text-center">
+            <div class="space-y-6 text-center">
+                <div class="bg-black/40 p-6 rounded-lg border border-[#b8860b]/30">
                     <p class="text-xs text-[#b8860b] uppercase font-black mb-1">Tổng số phiếu bầu</p>
                     <h3 id="teacher-total-votes" class="text-6xl font-black text-white">0</h3>
                 </div>
                 <div class="bg-black/40 p-6 rounded-lg border border-[#b8860b]/30 min-h-[200px] flex flex-col items-center justify-center">
                     <p class="text-xs text-[#b8860b] uppercase font-black mb-4">Phán quyết cuối cùng</p>
                     <div id="teacher-stamp" class="hidden"></div>
-                    <p id="teacher-waiting-msg" class="text-gray-500 italic text-sm text-center">Đang thu thập dữ liệu từ lớp học...</p>
+                    <p id="teacher-waiting-msg" class="text-gray-500 italic text-sm">Đang thu thập dữ liệu...</p>
                 </div>
                 <button onclick="location.href=window.location.pathname" class="w-full py-2 text-gray-500 hover:text-white text-[10px] uppercase font-bold tracking-widest transition-colors">
                     Thoát chế độ giáo viên
                 </button>
             </div>
 
-            <!-- Right Chart -->
             <div class="lg:col-span-2 bg-black/20 p-8 rounded-lg border border-[#b8860b]/30">
                 <div class="flex items-end justify-around h-64 border-b-2 border-gray-700 pb-2 gap-10">
                     <div class="flex flex-col items-center flex-1">
                         <div id="teacher-val-useful" class="text-3xl font-black text-green-400 mb-2">0</div>
-                        <div id="teacher-bar-useful" class="chart-bar w-full bg-green-600 rounded-t-md shadow-[0_0_20px_rgba(34,197,94,0.3)]" style="height: 5%"></div>
+                        <div id="teacher-bar-useful" class="chart-bar w-full bg-green-600 rounded-t-md" style="height: 5%"></div>
                         <span class="mt-4 text-[10px] font-black text-green-200 uppercase text-center leading-tight">Vô tội<br>(Hữu ích)</span>
                     </div>
                     <div class="flex flex-col items-center flex-1">
                         <div id="teacher-val-guilty" class="text-3xl font-black text-red-400 mb-2">0</div>
-                        <div id="teacher-bar-guilty" class="chart-bar w-full bg-red-600 rounded-t-md shadow-[0_0_20px_rgba(239,68,68,0.3)]" style="height: 5%"></div>
+                        <div id="teacher-bar-guilty" class="chart-bar w-full bg-red-600 rounded-t-md" style="height: 5%"></div>
                         <span class="mt-4 text-[10px] font-black text-red-200 uppercase text-center leading-tight">Có tội<br>(Nguy hiểm)</span>
                     </div>
                 </div>
-                
-                <!-- Recent Voters -->
                 <div class="mt-8">
                     <p class="text-[10px] text-[#b8860b] uppercase font-black mb-3">Bồi thẩm viên vừa bỏ phiếu:</p>
                     <div id="recent-voters" class="flex flex-wrap gap-2 text-[10px]">
-                        <span class="text-gray-500 italic text-xs">Đang chờ người đầu tiên...</span>
+                        <span class="text-gray-500 italic text-xs">Chưa có dữ liệu...</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- FIREBASE & LOGIC -->
+    <!-- SCRIPT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Configuration setup
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'phien-toa-bromine';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : {
-                apiKey: "AIzaSyAJpmjjyjTn9MmhX3ceSmdTQahKw7PlNp0",
-                authDomain: "phien-toa-bromine.firebaseapp.com",
-                projectId: "phien-toa-bromine",
-                storageBucket: "phien-toa-bromine.firebasestorage.app",
-                messagingSenderId: "138008156700",
-                appId: "1:138008156700:web:2ba8a196cd49234b041dd9"
-            };
+        const firebaseConfig = {
+            apiKey: "AIzaSyAJpmjjyjTn9MmhX3ceSmdTQahKw7PlNp0",
+            authDomain: "phien-toa-bromine.firebaseapp.com",
+            projectId: "phien-toa-bromine",
+            storageBucket: "phien-toa-bromine.firebasestorage.app",
+            messagingSenderId: "138008156700",
+            appId: "1:138008156700:web:2ba8a196cd49234b041dd9"
+        };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-
-        // Path Rule 1
         const verdictsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'verdicts');
 
         const questions = [
@@ -189,49 +225,52 @@
             { q: "Theo bạn, Bromine nên được phán quyết thế nào?", a: ["Tử hình (Cấm sử dụng).", "Vô tội (Cho phép sử dụng tự do).", "Phạt quản chế (Sử dụng có kiểm soát).", "Không quan tâm."], c: 2, e: "Mọi hóa chất đều có hai mặt, quan trọng là cách con người kiểm soát chúng." }
         ];
 
-        let currentQIdx = 0, score = 0, currentUser = null;
-        
-        const urlParams = new URLSearchParams(window.location.search);
-        const isTeacher = urlParams.get('role') === 'teacher';
+        let currentQIdx = 0, score = 0, currentUser = null, isOffline = false;
+        const isTeacher = new URLSearchParams(window.location.search).get('role') === 'teacher';
 
-        // Lấy các phần tử giao diện ở phạm vi toàn cục
-        const errorLabel = document.getElementById('error-details');
-        const retryBtn = document.getElementById('retry-btn');
-        const loadingText = document.getElementById('loading-text');
-        const loadingSpinner = document.getElementById('loading-spinner');
+        // --- UTILS ---
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.className = "show";
+            setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
+        }
 
-        // Auth Logic - Rule 3 compliance
+        function shuffleChoices(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        // --- AUTH ---
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    try {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } catch (mismatch) {
-                        await signInAnonymously(auth);
-                    }
+                    try { await signInWithCustomToken(auth, __initial_auth_token); } 
+                    catch { await signInAnonymously(auth); }
                 } else {
                     await signInAnonymously(auth);
                 }
             } catch (err) {
-                console.error("Auth failed:", err);
-                loadingText.innerText = "LỖI KẾT NỐI SERVER";
-                loadingSpinner.classList.add('hidden');
-                
-                errorLabel.classList.remove('hidden');
-                retryBtn.classList.remove('hidden');
-
-                if (err.code === 'auth/operation-not-allowed') {
-                    errorLabel.innerText = "Lỗi: Anonymous Auth chưa được bật trong Firebase Console.";
-                } else {
-                    errorLabel.innerText = "Mã lỗi: " + err.code + "\n" + err.message;
-                }
+                console.error("Auth Error:", err);
+                document.getElementById('loading-spinner').classList.add('hidden');
+                document.getElementById('error-container').classList.remove('hidden');
+                document.getElementById('loading-text').innerText = "KẾT NỐI THẤT BẠI";
+                document.getElementById('error-details').innerText = `Mã lỗi: ${err.code}\nThông báo: ${err.message}`;
             }
         };
 
-        // Gán sự kiện cho nút thử lại
-        if (retryBtn) {
-            retryBtn.onclick = () => location.reload();
-        }
+        document.getElementById('retry-btn').onclick = () => location.reload();
+        document.getElementById('skip-auth-btn').onclick = () => {
+            isOffline = true;
+            document.getElementById('loading-overlay').classList.add('hidden');
+            document.getElementById('offline-tag').classList.remove('hidden');
+            initView();
+        };
 
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
@@ -247,7 +286,7 @@
             if (isTeacher) {
                 document.getElementById('student-view').classList.add('hidden');
                 document.getElementById('teacher-view').classList.remove('hidden');
-                listenToResults();
+                if (!isOffline) listenToResults();
             } else {
                 document.getElementById('teacher-view').classList.add('hidden');
                 document.getElementById('student-view').classList.remove('hidden');
@@ -256,8 +295,10 @@
 
         // --- STUDENT LOGIC ---
         document.getElementById('start-quiz-btn').onclick = () => {
-            const nameInput = document.getElementById('student-name');
-            if (!nameInput.value.trim()) return alert("Vui lòng nhập tên!");
+            if (!document.getElementById('student-name').value.trim()) {
+                showToast("Vui lòng nhập tên!");
+                return;
+            }
             document.getElementById('name-screen').classList.add('hidden');
             document.getElementById('quiz-container').classList.remove('hidden');
             renderQuestion();
@@ -274,26 +315,34 @@
             document.getElementById('feedback-box').classList.add('hidden');
             document.getElementById('next-question-btn').classList.add('hidden');
 
-            q.a.forEach((choice, i) => {
+            // Map and shuffle
+            const choices = q.a.map((text, index) => ({ text, index }));
+            shuffleChoices(choices);
+
+            choices.forEach((choiceObj, i) => {
                 const btn = document.createElement('button');
-                btn.className = "btn-choice w-full text-left p-4 rounded-lg bg-[#3d2e24] flex items-center shadow-md";
-                btn.innerHTML = `<span class="w-8 font-bold text-[#b8860b]">${String.fromCharCode(65+i)}.</span> ${choice}`;
+                btn.className = "btn-choice w-full text-left p-4 rounded-lg bg-[#3d2e24] flex items-center";
+                btn.innerHTML = `<span class="w-8 font-bold text-[#b8860b]">${String.fromCharCode(65+i)}.</span> ${choiceObj.text}`;
+                
                 btn.onclick = () => {
-                    const allBtns = grid.querySelectorAll('button');
-                    allBtns.forEach(b => b.disabled = true);
+                    grid.querySelectorAll('button').forEach(b => b.disabled = true);
                     
-                    if (i === q.c) {
+                    const isCorrect = (choiceObj.index === q.c);
+                    if (isCorrect) {
                         score++;
                         btn.classList.add('correct');
                     } else {
                         btn.classList.add('wrong');
-                        allBtns[q.c].classList.add('correct');
+                        // Find the correct button and mark it
+                        const allButtons = grid.querySelectorAll('button');
+                        choices.forEach((c, idx) => {
+                            if (c.index === q.c) allButtons[idx].classList.add('correct');
+                        });
                     }
-                    
-                    const fBox = document.getElementById('feedback-box');
-                    fBox.innerText = (i === q.c ? "CHÍNH XÁC: " : "SAI RỒI: ") + q.e;
-                    fBox.className = `mt-6 p-4 rounded-lg text-center font-bold border ${i === q.c ? 'bg-green-900/20 text-green-400 border-green-700' : 'bg-red-900/20 text-red-400 border-red-700'}`;
-                    fBox.classList.remove('hidden');
+
+                    document.getElementById('feedback-box').innerText = (isCorrect ? "CHÍNH XÁC: " : "SAI RỒI: ") + q.e;
+                    document.getElementById('feedback-box').className = `mt-6 p-4 rounded-lg text-center font-bold border ${isCorrect ? 'bg-green-900/20 text-green-400 border-green-700' : 'bg-red-900/20 text-red-400 border-red-700'}`;
+                    document.getElementById('feedback-box').classList.remove('hidden');
                     document.getElementById('next-question-btn').classList.remove('hidden');
                 };
                 grid.appendChild(btn);
@@ -302,79 +351,55 @@
 
         document.getElementById('next-question-btn').onclick = async () => {
             currentQIdx++;
-            if (currentQIdx < questions.length) {
-                renderQuestion();
-            } else {
-                await submitVerdict();
-            }
+            if (currentQIdx < questions.length) renderQuestion();
+            else await submitVerdict();
         };
 
         async function submitVerdict() {
-            if (!currentUser) return;
-            document.getElementById('quiz-container').classList.add('hidden');
-            document.getElementById('loading-overlay').classList.remove('hidden');
-            loadingText.innerText = "ĐANG GỬI PHÁN QUYẾT...";
-            
+            if (isOffline) {
+                document.getElementById('quiz-container').classList.add('hidden');
+                document.getElementById('student-end-screen').classList.remove('hidden');
+                document.getElementById('end-status-msg').innerText = "Vì đang ở chế độ ngoại tuyến, điểm số của bạn không được gửi cho giáo viên. Điểm của bạn: " + score + "/5";
+                return;
+            }
             try {
                 await addDoc(verdictsCollection, {
                     name: document.getElementById('student-name').value.trim(),
                     score: score,
                     isGuilty: score < 3,
                     timestamp: serverTimestamp(),
-                    uid: currentUser.uid
+                    uid: currentUser?.uid
                 });
-                document.getElementById('loading-overlay').classList.add('hidden');
+                document.getElementById('quiz-container').classList.add('hidden');
                 document.getElementById('student-end-screen').classList.remove('hidden');
             } catch (err) {
                 console.error("Submit error:", err);
-                loadingText.innerText = "LỖI KHI GỬI DỮ LIỆU";
-                errorLabel.classList.remove('hidden');
-                errorLabel.innerText = "Hãy kiểm tra Firestore Rules.\nMã lỗi: " + err.code;
+                showToast("Lỗi khi gửi dữ liệu!");
             }
         }
 
-        // --- TEACHER LOGIC ---
         function listenToResults() {
-            if (!currentUser) return;
             onSnapshot(verdictsCollection, (snap) => {
-                let total = 0, guilty = 0, useful = 0;
-                let names = [];
-                
+                let total = 0, guilty = 0, useful = 0, names = [];
                 snap.forEach(doc => {
-                    const data = doc.data();
                     total++;
-                    if (data.isGuilty) guilty++; else useful++;
-                    if (data.name) names.push(data.name);
+                    if (doc.data().isGuilty) guilty++; else useful++;
+                    if (doc.data().name) names.push(doc.data().name);
                 });
-
                 document.getElementById('teacher-total-votes').innerText = total;
                 document.getElementById('teacher-val-useful').innerText = useful;
                 document.getElementById('teacher-val-guilty').innerText = guilty;
-
                 if (total > 0) {
                     const max = Math.max(useful, guilty, 1);
                     document.getElementById('teacher-bar-useful').style.height = `${(useful / max) * 100}%`;
                     document.getElementById('teacher-bar-guilty').style.height = `${(guilty / max) * 100}%`;
-                    
                     const stamp = document.getElementById('teacher-stamp');
                     stamp.classList.remove('hidden');
                     document.getElementById('teacher-waiting-msg').classList.add('hidden');
-                    
-                    if (useful > guilty) {
-                        stamp.innerText = "BROMINE: VÔ TỘI";
-                        stamp.className = "verdict-stamp text-green-500 border-green-500";
-                    } else if (guilty > useful) {
-                        stamp.innerText = "BROMINE: CÓ TỘI";
-                        stamp.className = "verdict-stamp text-red-500 border-red-500";
-                    } else {
-                        stamp.innerText = "HÒA PHIẾU";
-                        stamp.className = "verdict-stamp text-yellow-500 border-yellow-500";
-                    }
-
-                    const votersDiv = document.getElementById('recent-voters');
-                    votersDiv.innerHTML = names.slice(-15).reverse().map(n => 
-                        `<span class="bg-[#4a3728] px-2 py-1 rounded border border-[#b8860b]/30 text-[#d4af37] animate-pulse">${n}</span>`
-                    ).join('');
+                    if (useful > guilty) { stamp.innerText = "BROMINE: VÔ TỘI"; stamp.className = "verdict-stamp text-green-500 border-green-500"; }
+                    else if (guilty > useful) { stamp.innerText = "BROMINE: CÓ TỘI"; stamp.className = "verdict-stamp text-red-500 border-red-500"; }
+                    else { stamp.innerText = "HÒA PHIẾU"; stamp.className = "verdict-stamp text-yellow-500 border-yellow-500"; }
+                    document.getElementById('recent-voters').innerHTML = names.slice(-15).reverse().map(n => `<span class="bg-[#4a3728] px-2 py-1 rounded border border-[#b8860b]/30 text-[#d4af37] animate-pulse">${n}</span>`).join('');
                 }
             }, (err) => console.error("Snapshot error:", err));
         }
